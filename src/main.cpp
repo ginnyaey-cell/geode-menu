@@ -1,40 +1,123 @@
-/**
- * Include the Geode headers.
- */
 #include <Geode/Geode.hpp>
+#include <Geode/modify/MenuLayer.hpp>
 
-/**
- * Brings cocos2d and all Geode namespaces to the current scope.
- */
 using namespace geode::prelude;
 
-/**
- * `$modify` lets you extend and modify GD's classes.
- * To hook a function in Geode, simply $modify the class
- * and write a new function definition with the signature of
- * the function you want to hook.
- *
- * Here we use the overloaded `$modify` macro to set our own class name,
- * so that we can use it for button callbacks.
- *
- * Notice the header being included, you *must* include the header for
- * the class you are modifying, or you will get a compile error.
- *
- * Another way you could do this is like this:
- *
- * struct MyMenuLayer : Modify<MyMenuLayer, MenuLayer> {};
- */
-#include <Geode/modify/MenuLayer.hpp>
-class $modify(MyMenuLayer, MenuLayer) {
-	/**
-	 * Typically classes in GD are initialized using the `init` function, (though not always!),
-	 * so here we use it to add our own button to the bottom menu.
-	 *
-	 * Note that for all hooks, your signature has to *match exactly*,
-	 * `void init()` would not place a hook!
-	*/
-	bool init() {
-		/**
+class NemoMenu : public CCLayer {
+public:
+    static NemoMenu* create() {
+        auto ret = new NemoMenu();
+        if (ret && ret->init()) {
+            ret->autorelease();
+            return ret;
+        }
+
+        delete ret;
+        return nullptr;
+    }
+
+    bool init() override {
+        if (!CCLayer::init())
+            return false;
+
+        auto winSize = CCDirector::sharedDirector()->getWinSize();
+
+        auto bg = CCLayerColor::create(
+            ccc4(0, 0, 0, 180),
+            250,
+            180
+        );
+
+        bg->setPosition(
+            winSize.width / 2 - 125,
+            winSize.height / 2 - 90
+        );
+
+        this->addChild(bg);
+
+        auto title = CCLabelBMFont::create(
+            "Nemo Menu",
+            "bigFont.fnt"
+        );
+
+        title->setPosition(
+            winSize.width / 2,
+            winSize.height / 2 + 60
+        );
+
+        this->addChild(title);
+
+        auto label = CCLabelBMFont::create(
+            "Hello Geode!",
+            "goldFont.fnt"
+        );
+
+        label->setPosition(
+            winSize.width / 2,
+            winSize.height / 2
+        );
+
+        this->addChild(label);
+
+        return true;
+    }
+};
+
+class $modify(MenuLayer) {
+    bool init() {
+        if (!MenuLayer::init())
+            return false;
+
+        auto winSize = CCDirector::sharedDirector()->getWinSize();
+
+        auto sprite = CCSprite::create("nemo.png");
+
+        if (!sprite) {
+            sprite = CCSprite::createWithSpriteFrameName(
+                "GJ_infoIcon_001.png"
+            );
+        }
+
+        auto button = CCMenuItemSpriteExtra::create(
+            sprite,
+            this,
+            menu_selector(MenuLayer::onNemoButton)
+        );
+
+        auto menu = this->getChildByID("bottom-menu");
+
+        if (!menu) {
+            menu = CCMenu::create();
+            menu->setPosition({0, 0});
+            this->addChild(menu);
+        }
+
+        button->setPosition({
+            winSize.width - 40,
+            40
+        });
+
+        static_cast<CCMenu*>(menu)->addChild(button);
+
+        return true;
+    }
+
+    void onNemoButton(CCObject*) {
+        auto scene = CCDirector::sharedDirector()->getRunningScene();
+
+        auto existing = scene->getChildByTag(99999);
+
+        if (existing) {
+            existing->removeFromParent();
+            return;
+        }
+
+        auto menu = NemoMenu::create();
+        menu->setTag(99999);
+
+        scene->addChild(menu, 999);
+    }
+};		/**
 		 * We call the original init function so that the
 		 * original class is properly initialized.
 		 */
